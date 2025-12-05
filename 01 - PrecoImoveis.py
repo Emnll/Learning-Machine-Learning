@@ -16,16 +16,20 @@ import tarfile
 import urllib
 
 from sklearn.model_selection import StratifiedShuffleSplit
+import matplotlib.pyplot as plt
 #%%
-""" Download dos dados"""
+""" Definição da URL para download dos dados """
 
 #Faz o download do dataset que será analisado direto do github do criador do livro
 DOWNLOAD_ROOT = "https://raw.githubusercontent.com/ageron/handson-ml2/master/"
 HOUSING_PATH = os.path.join("datasets", "housing")
 HOUSING_URL = DOWNLOAD_ROOT + "datasets/housing/housing.tgz"
 # %%
-# Cria um diretório chamado dataset, faz download do arquivo housing.tgz e extrai o arquivo housing.csv,
-#  salvando tudo na pasta dataset
+"""
+Cria um diretório chamado dataset, faz download do arquivo housing.tgz
+e extrai o arquivo housing.csv,
+salvando tudo na pasta dataset
+"""
 def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
     if not os.path.isdir(housing_path):
         os.makedirs(housing_path)
@@ -35,7 +39,7 @@ def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
     housing_tgz.extractall(path=housing_path)
     housing_tgz.close()
 
-# carrega os dados do arquivo housing
+""" carrega os dados do arquivo housing """
 def load_housing_data(housing_path=HOUSING_PATH):
     csv_path = os.path.join(housing_path, "housing.csv")
     return pd.read_csv(csv_path)
@@ -43,20 +47,24 @@ def load_housing_data(housing_path=HOUSING_PATH):
 fetch_housing_data()
 
 #%%
-#Carrega o df pela função e mostra as primeiras cinco linhas do dataset
+""" Carrega o df pela função e mostra as primeiras cinco linhas do dataset """
 housing = load_housing_data()
 housing.head()
 
 # %%
-# Mostra informações sobre cada atributo (coluna) do dataset
+""" Mostra informações sobre cada atributo (coluna) do dataset """
 housing.info()
 # %%
-# Conta a quantidade de observações para cada tipo de categoria em "ocean_proximity"
-# Vale notar que essa função é útil para variáveis categóricas
-
+"""
+Conta a quantidade de observações para cada tipo de categoria em "ocean_proximity"
+Vale notar que essa função é útil para variáveis categóricas
+"""
 housing["ocean_proximity"].value_counts()
 # %%
-# Mostra informações como média, contagem, desvio padrão, mínimo, máximo e quartis para cada um dos atributos
+""" 
+Mostra informações como média, contagem, desvio padrão,
+ mínimo, máximo e quartis para cada um dos atributos
+"""
 housing.describe()
 
 #%%
@@ -66,12 +74,22 @@ train_set, test_set = train_test_split(housing, test_size=0.2, random_state=42)
 len(train_set)
 
 #%%
+""" Categorização da coluna de renda """
 housing["income_cat"] = pd.cut(housing["median_income"],
                                bins = [0., 1.5, 3.0, 4.5, 6., np.inf],
                                labels = [1, 2, 3, 4, 5])
 housing["income_cat"].hist()
 # %%
+"""
+Uma amostragem aleatória pode introduzir viés deamostragem significativo, nesse contexto se utiliza
+a amostra estratificada.
 
+Amostras estratificadas: A população é dividida em subgrupos homogêneos, chamados de estratos,
+e recolhe-se a amostra do número certo de instâncias.
+
+É importante ter um número suficiente de instâncias em cada estrato para garantir
+ que a amostra seja representativa.
+"""
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 for train_index, test_index in split.split(housing, housing["income_cat"]):
     strat_train_set = housing.loc[train_index]
@@ -82,5 +100,24 @@ strat_test_set["income_cat"].value_counts() / len(strat_test_set)
 for set_ in (strat_train_set, strat_test_set):
     set_.drop("income_cat", axis=1, inplace=True)
 # %%
+#Renomeação
 housing = strat_train_set.copy()
 # %%
+housing.plot(kind = "scatter", x = "longitude", y = "latitude")
+
+#%%
+""" O alpha auxilia a localizar onde há uma alta concentração de dados """
+housing.plot(kind = "scatter", x = "longitude", y = "latitude", alpha = 0.1)
+
+# %%
+
+housing.plot(kind = "scatter", x = "longitude", y = "latitude", alpha = 0.4,
+             s = housing["population"]/100, label = "population", figsize = (10,7),
+             c = "median_house_value", cmap = plt.get_cmap("jet"), colorbar = True,
+             )
+plt.legend()
+
+#%%
+corr_matrix = housing.corr()
+
+#%%
